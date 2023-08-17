@@ -1,0 +1,32 @@
+|MT48LC8M8A2
+CKE => ~NO_FANOUT~
+CLK => ~NO_FANOUT~
+CS => ~NO_FANOUT~
+WE => ~NO_FANOUT~
+CAS => ~NO_FANOUT~
+RAS => ~NO_FANOUT~
+DQM => ~NO_FANOUT~
+BA[0] => ~NO_FANOUT~
+BA[1] => ~NO_FANOUT~
+A[0] => ~NO_FANOUT~
+A[1] => ~NO_FANOUT~
+A[2] => ~NO_FANOUT~
+A[3] => ~NO_FANOUT~
+A[4] => ~NO_FANOUT~
+A[5] => ~NO_FANOUT~
+A[6] => ~NO_FANOUT~
+A[7] => ~NO_FANOUT~
+A[8] => ~NO_FANOUT~
+A[9] => ~NO_FANOUT~
+A[10] => ~NO_FANOUT~
+A[11] => ~NO_FANOUT~
+DQ[0] <> <UNC>
+DQ[1] <> <UNC>
+DQ[2] <> <UNC>
+DQ[3] <> <UNC>
+DQ[4] <> <UNC>
+DQ[5] <> <UNC>
+DQ[6] <> <UNC>
+DQ[7] <> <UNC>
+
+

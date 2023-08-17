@@ -1,0 +1,9 @@
+module MUX #(parameter N=4) (
+
+	input [N-1:0] A, B,   //Declaring the data inputs for Multiplexer
+	input S, 				 //Declare select input A = 0, B = 1
+	output [N-1:0] Z 		 //Declare outputs
+);
+	assign Z = S==0 ? A : B; //select inputs based on select A or B
+
+endmodule

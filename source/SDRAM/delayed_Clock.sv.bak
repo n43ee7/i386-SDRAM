@@ -1,0 +1,20 @@
+module delayed_Clock (
+    input wire clk,
+    input wire reset,
+    input wire input_signal,
+    output wire output_logic
+);
+
+reg [6:0] shift_register = 0;
+wire delayed_signal = shift_register[6];
+
+always @(posedge clk or posedge reset) begin
+    if (reset)
+        shift_register <= 0;
+    else
+        shift_register <= {shift_register[5:0], input_signal};
+end
+
+assign output_logic = delayed_signal;
+
+endmodule

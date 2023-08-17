@@ -1,0 +1,333 @@
+// (C) Nabeel Nayyar & Ahmed Al-Mudhi | The University of Texas
+// 	CSE 4358 Microprocessor Systems Design
+//
+// Top Level Design of the SDRAM Controller 
+
+module SDRAM_Controller(
+			// CPU -> 80386DX
+			input CLK,
+			input RESET,	  			// [~RESET]
+			output READY,
+			input [31:2] ADDR,  		// 30-bit Address Line from CPU
+			inout [31:0] DATA,  		// 32-bit Data Line from CPU
+			input [3:0] BE,  			// [~BE] Bank Enable from CPU
+			input ADS, 		 			// [~ADS] Address Strobe Signal from CPU
+			input MIO,					// [M/~IO]
+			input WR, 					// [W/~R]
+			input CS, 					// [~CS]
+			input LOCK,					// [~LOCK] ??
+			
+			// SDRAM -> Memory
+			output SDRAM_CLK,
+			output SDRAM_CLK_EN,
+			output [2:0] SDRAM_CMD,	// SDRAM_CMD -> [~WE] [~RAS] [~CAS] 
+			output [11:0] SDRAM_A, 
+			inout [7:0] SDRAM_DQ,
+			output SDRAM_CS,
+			output [1:0] SDRAM_BA,
+			output SDRAM_DQM
+);
+
+	// Defining all the States of SDRAM
+	
+	//	> States of the INITIALIZATION (TOP-STATE)
+	parameter RESET_ST	= 5'd1;
+	parameter WAIT_ST 	= 5'd2;
+	parameter PC_ALL 		= 5'd3;
+	parameter NOP0			= 5'd4;
+	parameter AUTO_RF 	= 5'd5;
+	parameter LMR			= 5'd6;
+	parameter IDLE			= 5'd7;
+	// NOP Chain For Init Stage (18 NOP STATES)
+	parameter NOP1			= 5'd8;
+	parameter NOP2			= 5'd9;
+	parameter NOP3			= 5'd10;
+	parameter NOP4			= 5'd11;
+	parameter NOP5			= 5'd12;
+	parameter NOP6			= 5'd13;
+	parameter NOP7			= 5'd14;
+	parameter NOP8			= 5'd15;
+	parameter NOP9			= 5'd16;
+	parameter NOP10		= 5'd17;
+	parameter NOP11		= 5'd18;
+	parameter NOP12		= 5'd19;
+	parameter NOP13		= 5'd20;
+	parameter NOP14		= 5'd21;
+	parameter NOP15		= 5'd22;
+	parameter NOP16		= 5'd23;
+	parameter NOP17		= 5'd24;
+	parameter AUTO_RF1 	= 5'd25;
+	
+	// Internal Registers and Parameter declarations
+	reg [7:0] state;
+	wire TIMEOUT;
+	parameter X = 16'b0010011100010000;	// Load Value for the Wait Counter (100us) = 10k Cyc
+	
+	// MUX Cabling
+	reg APC;				 // Auto Precharge Register
+	assign APC = 1'b1; // Setting Auto Precharge ON
+	wire MUX_SEL;
+	wire A10;
+	
+	// Timer Cabling 
+	wire TMR_RESET_W;
+	reg TMR_RESET_R = 1'b1;
+	assign TMR_RESET_R = TMR_RESET_W;
+	
+
+	// MUX of A10 with APC 1/0
+	MUX inst_a (	
+		.A (SDRAM_A[10]), 
+		.B (APC),
+		.S (MUX_SEL), 				
+		.Z (A10) 		
+	);
+	// Timer Instantiation 
+	WAIT_ST_COUNTER inst_b (		// Count till 100us -> 10,000 cyc
+		.CLK (CLK), 
+		.LOAD (TMR_RESET_W), 
+		.DN 	(1'b1), 
+		.X 	(X),
+		.ZERO (TIMEOUT)				
+	);
+	
+	// FSM 25-Steps For Initialization 
+	always_ff @ (posedge CLK) begin
+		if (RESET) begin							// RESET = 1 starts the RESET State of the FSM
+			state <= RESET_ST;
+		end
+		else begin 
+			case (state)
+				// Reset State
+				RESET_ST:
+					begin
+						if (LOCK) begin
+							state <= WAIT_ST;
+						end
+						else begin
+							state <= RESET_ST;
+						end
+					end
+				// Wait 100us State
+				WAIT_ST:
+					begin
+						TMR_RESET_R = 1'b0; 		// Start the counter & Wait till TIMEOUT
+						if (TIMEOUT) begin
+							state <= PC_ALL;
+						end
+					end
+				// Precharge All State
+				PC_ALL:
+					begin
+						SDRAM_CLK_EN = 1'b1;		// Enable SDRAM CLK EN
+						// Command [PC]ALL = ~CS = 0 | ~RAS = 0 | ~CAS = 1 | ~WE = 0
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[1] = 1'b0;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						SDRAM_CMD[0] = 1'b0;	// WE
+						// Selecting A10 from MUX
+						SDRAM_A[10]  = 1'b1;
+						MUX_SEL 		 = 1'b1;			
+			
+						// Change to next State
+						state <= NOP0;
+					end
+				// No Operation Chain x2 
+				NOP0:	// 1
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1;	// WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP1;
+					end	
+				NOP1:	// 2
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= AUTO_RF;					
+					end
+				AUTO_RF:
+					begin
+						// Command [AUTO REFRESH] = ~CS = 0 | ~RAS = 0 | ~CAS = 0 | ~WE = 1
+						SDRAM_CS			= 1'b0;	// CS
+						SDRAM_CMD[0] 	= 1'b1;	// WE
+						SDRAM_CMD[1]	= 1'b0;	// RAS
+						SDRAM_CMD[2]	= 1'b0;	// CAS
+					end
+				// NOP Chain of 7 Cycles
+				NOP2:	// 1
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP3;
+					end
+				NOP3:	// 2
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP4;
+					end
+				NOP4:	// 3
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP5;
+					end
+				NOP5:	// 4
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP6;
+					end
+				NOP6:	// 5
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP7;
+					end
+				NOP7:	// 6
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP8;
+					end				
+				NOP8:	// 7
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= AUTO_RF1;
+					end	
+				// Auto Refresh 
+				AUTO_RF1:
+					begin
+						// Command [AUTO REFRESH] = ~CS = 0 | ~RAS = 0 | ~CAS = 0 | ~WE = 1
+						SDRAM_CS			= 1'b0;	// CS
+						SDRAM_CMD[0] 	= 1'b1;	// WE
+						SDRAM_CMD[1]	= 1'b0;	// RAS
+						SDRAM_CMD[2]	= 1'b0;	// CAS
+						state <= NOP9;
+					end
+				// NOP chain of 7 Cycles
+				NOP9:	// 1
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP10;
+					end
+				NOP10:	// 2
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP11;
+					end
+				NOP11:	// 3
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP12;
+					end
+				NOP12:	// 4
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP13;
+					end
+				NOP13:	// 5
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP14;
+					end
+				NOP14:	// 6
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP15;
+					end				
+				NOP15:	// 7
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= LMR;
+					end
+				// Load Mode Register
+				LMR:
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b0; // WE
+						SDRAM_CMD[1] = 1'b0;	// RAS
+						SDRAM_CMD[2] = 1'b0;	// CAS
+						// OPCODE??
+						state <= NOP16;						
+					end
+				// NOP chain of 2 cycles
+				NOP16:	// 1
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1  
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= NOP17;
+					end
+				NOP17:	// 2
+					begin
+						// Command [NOP] = ~CS = 0 | ~RAS = 1 | ~CAS = 1 | ~WE = 1 
+						SDRAM_CS 	 = 1'b0;	// CS
+						SDRAM_CMD[0] = 1'b1; // WE
+						SDRAM_CMD[1] = 1'b1;	// RAS
+						SDRAM_CMD[2] = 1'b1;	// CAS
+						state <= IDLE;			// ENTER IDLE STATE
+					end
+			endcase
+		end
+	end
+endmodule

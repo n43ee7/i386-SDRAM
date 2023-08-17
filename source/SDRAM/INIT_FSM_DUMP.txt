@@ -1,0 +1,46 @@
+	// == Initialization Top-State FSM ==
+	// 		> ASSUME CLK => PLL Multiplied x2 CLK 
+	//			> FF Block for Reset State
+	//			> T(RP) = 2 cyc | T(RFC) = 7 cyc | T(MRD) = 2 cyc
+	always_ff @ (posedge CLK, negedge RESET) begin
+			if (!RESET) begin
+				state <= RESET_ST;
+			end
+			else begin
+				state <= WAIT_ST;
+			end
+	end
+	
+	// Wait State
+	always_ff @ (posedge CLK) begin
+		if (state == WAIT_ST) begin	// Asserted that we are in Wait State
+ 
+			RESET_R = 1'b0;				// Start the Wait counter
+
+			if (TIMEOUT) begin 			// Reset state if ~TIMEOUT
+				state <= PC_ALL;
+			end
+			else if (!TIMEOUT) begin
+				state <= WAIT_ST;
+			end
+		end
+	end
+	
+	// Pre-Charge ALL Banks State
+	always_ff @ (posedge CLK) begin
+		if (state == PC_ALL) begin
+			SDRAM_CLK_EN = 1'b1; // CLK_EN 1
+			// Command PC_ALL => ~CS = 0 | ~RAS = 0 | ~CAS = 1 | ~WE = 0
+			SDRAM_CS = 1'b0;
+			SDRAM_CMD[1] = 1'b0;
+			SDRAM_CMD[2] = 1'b1;
+			SDRAM_CMD[0] = 1'b0;
+			// Selecting A10 from MUX
+			SDRAM_A[10] = 1'b1;
+			MUX_SEL = 1'b0;			
+			
+			// Change to next State
+			state <= NOP0;
+		end
+	end
+	

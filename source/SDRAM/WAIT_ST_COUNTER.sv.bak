@@ -1,0 +1,10 @@
+module WAIT_ST_COUNTER (
+		input CLK,
+		input LOAD,
+		output ZERO,
+		input DN,			// DN = ~DOWN or UP  
+		input [31:0] X;	// Input Value 
+);
+
+
+endmodule

@@ -1,0 +1,20 @@
+Fitter Status : Successful - Wed Aug  9 02:15:10 2023
+Quartus Prime Version : 22.1std.1 Build 917 02/14/2023 SC Lite Edition
+Revision Name : SDRAM_Controller
+Top-level Entity Name : SDRAM_Controller
+Family : Cyclone V
+Device : 5CGXFC9D7F27C8
+Timing Models : Final
+Logic utilization (in ALMs) : 1 / 113,560 ( < 1 % )
+Total registers : 0
+Total pins : 103 / 378 ( 27 % )
+Total virtual pins : 0
+Total block memory bits : 0 / 12,492,800 ( 0 % )
+Total RAM Blocks : 0 / 1,220 ( 0 % )
+Total DSP Blocks : 0 / 342 ( 0 % )
+Total HSSI RX PCSs : 0 / 9 ( 0 % )
+Total HSSI PMA RX Deserializers : 0 / 9 ( 0 % )
+Total HSSI TX PCSs : 0 / 9 ( 0 % )
+Total HSSI PMA TX Serializers : 0 / 9 ( 0 % )
+Total PLLs : 0 / 17 ( 0 % )
+Total DLLs : 0 / 4 ( 0 % )
