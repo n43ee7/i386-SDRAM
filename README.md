@@ -14,40 +14,40 @@ In 1986, Intel revolutionized computing with the release of the Intel 80386 DX, 
 - Timing Diagrams of retro x86 architecture can be harmonized with contemporary memory technologies.
 
 ## SDRAM Controller Design
-Top-level of the controller
+Top-level of the controller \
 ![TopBlockDiagram8-2-23](https://github.com/n43ee7/i386-SDRAM/assets/47240597/26ee0614-64c4-4205-b477-8835c5ea5102)
 
 Operation:
 
-Top-level State Machine:
+Top-level State Machine: \
 ![TOP_FSM_ADVANCED_SD](https://github.com/n43ee7/i386-SDRAM/assets/47240597/30f91b6b-c34c-4c5d-b543-b2d89fd9e3de)
 
-Initialization State diagram:
+Initialization State diagram: \
 ![Initialzation_FSM](https://github.com/n43ee7/i386-SDRAM/assets/47240597/ae491f38-5df1-41cd-9e24-db44daf4360c)
 
-Refresh State Diagram:
+Refresh State Diagram: \
 ![REFRESH_FSM](https://github.com/n43ee7/i386-SDRAM/assets/47240597/741002c8-b695-43ca-9012-90e1be6198bc)
 
-Write State Diagram:
+Write State Diagram: \
 ![WRITE_FSM](https://github.com/n43ee7/i386-SDRAM/assets/47240597/021f0ef4-1803-4bd9-932e-f4cad7bd37da)
 
-Read State Diagram:
+Read State Diagram: \
 ![READ_FSM](https://github.com/n43ee7/i386-SDRAM/assets/47240597/ee396805-3234-4786-a427-f3bcd73e6070)
 
-Data Read Burst Latching for 32-bit Data Bus:
+Data Read Burst Latching for 32-bit Data Bus: \
 ![DATA_OUT_LATCH](https://github.com/n43ee7/i386-SDRAM/assets/47240597/562d320f-843f-4edf-be1f-e2fb41c5ecd0)
 
-Timers utilized in the diagram:
-Timer 1: (Declared in Scope of SDRAM Controller Design)
+Timers utilized in the diagram: \
+Timer 1: (Declared in Scope of SDRAM Controller Design) \
 ![TIMER1_RFRQ](https://github.com/n43ee7/i386-SDRAM/assets/47240597/a1cd513a-0617-4323-94c7-8974e2be540f)
 
-Timer 0: (Declared in the Scope of SDRAM Controller Design)
+Timer 0: (Declared in the Scope of SDRAM Controller Design) \
 ![TIMER0_WAIT100us](https://github.com/n43ee7/i386-SDRAM/assets/47240597/55ca04e4-4f09-48c7-936e-667a91ed2616)
 
-SDRAM Decoder:
+SDRAM Decoder: \
 ![DCD_BLOCK](https://github.com/n43ee7/i386-SDRAM/assets/47240597/4b50f5cc-0602-493f-b5e9-5c710dce5cd9)
 
-Unreferenced PLL Logic from the scope of code:
+Unreferenced PLL Logic from the scope of code: \
 ![PLLVCO](https://github.com/n43ee7/i386-SDRAM/assets/47240597/6a2a2f6c-f839-4b91-b878-2690485551b3)
 
 
