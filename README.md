@@ -14,10 +14,19 @@ In 1986, Intel revolutionized computing with the release of the Intel 80386 DX, 
 - Timing Diagrams of retro x86 architecture can be harmonized with contemporary memory technologies.
 
 ## SDRAM Controller Design
-Top-level of the controller \
+### Top-level of the controller 
 ![TopBlockDiagram8-2-23](https://github.com/n43ee7/i386-SDRAM/assets/47240597/26ee0614-64c4-4205-b477-8835c5ea5102)
 
-Operation:
+The top design shows the Address bus, Data bus, and control signals interface with the SDRAM controller from where the SDRAM memory device is connected to the SDRAM controller's Data bus and control signals (including CLK and Command) connected to the memory device. 
+![TopDesign8-2-23](https://github.com/n43ee7/i386-SDRAM/assets/47240597/0eded092-2da0-420b-a503-fc0173024931)
+
+
+This top-level design is defined in Verilog including a memory decoder that generates the CS# (Chip select) and so is READ and WRITE control signals using the CPU W/R#, M/IO# pins. As shown below.
+
+![SDRAM_Control_Signals](https://github.com/n43ee7/i386-SDRAM/assets/47240597/8f4dfc9f-3b40-4162-9db8-ed0dd1ec585d)
+
+
+### SDRAM Controller Operation:
 
 Top-level State Machine: \
 ![TOP_FSM_ADVANCED_SD](https://github.com/n43ee7/i386-SDRAM/assets/47240597/30f91b6b-c34c-4c5d-b543-b2d89fd9e3de)
